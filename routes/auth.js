@@ -117,18 +117,25 @@ router.put("/me", protect, upload.single("image"), async (req, res) => {
   }
 });
 
+const Post = require("../models/Post");
+
 router.get("/user/:id", async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password"); // نشيل الباسورد
+
     if (!user) {
       return res.status(404).json({ message: "المستخدم غير موجود" });
     }
-    res.status(200).json(user);
+
+    const posts = await Post.find({ authorId: req.params.id }).sort({ createdAt: -1 }); // 👈 نجيب بوستاته
+
+    res.status(200).json({ user, posts });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "حدث خطأ أثناء جلب المستخدم" });
   }
 });
+
 
 router.get("/users", async (req, res) => {
   try {
@@ -150,5 +157,29 @@ router.delete("/user/:id", async (req, res) => {
     res.status(500).json({ message: "حدث خطأ أثناء حذف المستخدم" });
   }
 });
+
+router.put("/make-admin/:userId", async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "المستخدم غير موجود" });
+    }
+
+    if (user.role === "admin") {
+      return res.status(400).json({ message: "المستخدم بالفعل Admin" });
+    }
+
+    user.role = "admin";
+    await user.save();
+
+    res.status(200).json({ message: "تم ترقية المستخدم إلى Admin", user });
+  } catch (error) {
+    res.status(500).json({ message: "فشل في ترقية المستخدم", error });
+  }
+});
+
 
 module.exports = router;

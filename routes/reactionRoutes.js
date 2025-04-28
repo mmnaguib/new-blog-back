@@ -7,6 +7,7 @@ const router = express.Router();
 router.post("/:postId/react", async (req, res) => {
   const { postId } = req.params;
   const { type, userId } = req.body;
+  const io = req.app.get("io"); // خد الـ io اللي جهزناه فوق
 
   if (!type || !userId) {
     return res.status(400).json({ message: "type و userId مطلوبين" });
@@ -57,12 +58,14 @@ router.post("/:postId/react", async (req, res) => {
     }
 
     if (post.authorId.toString() !== userId) {
-      await Notification.create({
+      const notification = await Notification.create({
         userId: post.authorId,
         type: "reaction",
         message: `تفاعل شخص على بوستك`,
         postId: postId,
       });
+      
+    io.emit("newNotification", { userId: post.authorId, notification });
     }
 
     res.status(200).json(reaction);

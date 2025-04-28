@@ -9,6 +9,7 @@ const router = express.Router();
 router.post("/:postId", async (req, res) => {
   const { postId } = req.params;
   const { content, userId } = req.body;
+  const io = req.app.get("io"); // خد الـ io اللي جهزناه فوق
 
   if (!content || !userId) {
     return res.status(400).json({ message: "محتوى التعليق والمستخدم مطلوبين" });
@@ -37,13 +38,16 @@ router.post("/:postId", async (req, res) => {
     );
 
     if (post && post.authorId.toString() !== userId) {
-      await Notification.create({
+      const notification =  await Notification.create({
         userId: post.authorId,
         type: "comment",
         message: `علق ${populatedComment.userId.username} على ${post.title}`,
         postId: postId,
       });
+    io.emit("newNotification", { userId: post.authorId, notification });
     }
+
+
 
     res.status(201).json(populatedComment);
   } catch (err) {
