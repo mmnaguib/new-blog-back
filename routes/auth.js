@@ -109,14 +109,13 @@ router.put("/me", protect, upload.single("image"), async (req, res) => {
         phone: user.phone,
         image: user.image,
         role: user.role,
-      }
+      },
     });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
-
 
 router.get("/user/:id", async (req, res) => {
   try {
@@ -128,6 +127,27 @@ router.get("/user/:id", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "حدث خطأ أثناء جلب المستخدم" });
+  }
+});
+
+router.get("/users", async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ message: "حدث خطأ أثناء جلب المستخدمين" });
+  }
+});
+
+router.delete("/user/:id", async (req, res) => {
+  try {
+    const deleted = await User.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "المستخدم غير موجود للحذف" });
+    }
+    res.status(200).json({ message: "تم حذف المستخدم بنجاح" });
+  } catch (err) {
+    res.status(500).json({ message: "حدث خطأ أثناء حذف المستخدم" });
   }
 });
 
