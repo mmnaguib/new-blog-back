@@ -1,35 +1,76 @@
+// ======== server.js =========
 const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const http = require("http");
 const { Server } = require("socket.io");
+const Message = require("./models/Message");
 
-dotenv.config();
 const app = express();
 const server = http.createServer(app);
-
 const io = new Server(server, {
   cors: {
-    origin: "*", // عشان تقبل كل الاتصالات لو انت لسه في مرحلة التطوير
+    origin: "*",
     methods: ["GET", "POST"],
   },
 });
 
+const onlineUsers = new Map(); // نقوم بتخزين الـ users المتصلين
+
 io.on("connection", (socket) => {
-  console.log("مستخدم متصل:", socket.id);
-  socket.on("sendMessage", ({ senderId, receiverId, text }) => {
-    console.log(`رسالة من ${senderId} إلى ${receiverId}: ${text}`);
-    io.emit("getMessage", { senderId, receiverId, text });
+  console.log("✅ مستخدم متصل:", socket.id);
+
+  // عند الانضمام
+  socket.on("join", (userId) => {
+    onlineUsers.set(userId, socket.id);
+    console.log("🟢", userId, "انضم بالسوكيت", socket.id);
+
+    // عند أي اتصال جديد أرسل جميع المستخدمين الأونلاين لكل الـ clients
+    io.emit("onlineUsers", Array.from(onlineUsers.keys()));
   });
 
+  // عند الإرسال
+  socket.on("sendMessage", async (msg) => {
+    try {
+      const savedMsg = await Message.create(msg);
+      const populatedMsg = await Message.findById(savedMsg._id).populate(
+        "sender",
+        "username image"
+      );
+
+      // شوف الـ socket الخاص بالمستقبل
+      const receiverSocketId = onlineUsers.get(msg.receiverId);
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit("getMessage", populatedMsg);
+      }
+
+      // كمان ابعته للمرسل علشان يظهر عنده فورًا
+      socket.emit("getMessage", populatedMsg);
+    } catch (err) {
+      console.error("❌ خطأ في إرسال الرسالة:", err.message);
+    }
+  });
+
+  // عند الخروج
   socket.on("disconnect", () => {
-    console.log("مستخدم قطع الاتصال:", socket.id);
+    console.log("🔴 مستخدم قطع الاتصال:", socket.id);
+    for (const [userId, sId] of onlineUsers.entries()) {
+      if (sId === socket.id) {
+        onlineUsers.delete(userId);
+        break;
+      }
+    }
+
+    // عند قطع الاتصال أرسل الـ onlineUsers المحدث لكل المتصلين
+    io.emit("onlineUsers", Array.from(onlineUsers.keys()));
   });
 });
 
+app.use(cors());
+app.use(express.json());
 
-app.set("io", io);
+dotenv.config();
 
 app.use(cors());
 app.use(express.json());
@@ -56,13 +97,10 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/messages", messageRoute);
 app.use("/api/conversations", conversationRoute);
 
-mongoose
-  .connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ Connected to MongoDB"))
-  .catch((err) => console.error("❌ DB Error:", err));
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

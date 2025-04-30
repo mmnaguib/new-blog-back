@@ -2,34 +2,31 @@ const express = require("express");
 const router = express.Router();
 const Message = require("../models/Message");
 
-// Create a new message
+// POST /api/messages/
 router.post("/", async (req, res) => {
-  const { conversationId, senderId, text } = req.body;
+  const { conversationId, sender, text } = req.body;
 
-  const newMessage = new Message({
+  const message = new Message({
     conversationId,
-    senderId,
+    sender,
     text,
   });
 
-  try {
-    const savedMessage = await newMessage.save();
-    res.status(201).json(savedMessage);
-  } catch (err) {
-    res.status(500).json(err);
-  }
+  await message.save();
+
+  // هنا ممكن تبعت بالـ socket كمان
+  const io = req.app.get("io");
+  io.to(conversationId).emit("receiveMessage", message);
+
+  res.status(201).json(message);
 });
 
-// Get messages of a conversation
 router.get("/:conversationId", async (req, res) => {
-  try {
-    const messages = await Message.find({
-      conversationId: req.params.conversationId,
-    });
-    res.status(200).json(messages);
-  } catch (err) {
-    res.status(500).json(err);
-  }
+  const messages = await Message.find({
+    conversationId: req.params.conversationId,
+  }).populate("sender", "username");
+
+  res.status(200).json(messages);
 });
 
 module.exports = router;
