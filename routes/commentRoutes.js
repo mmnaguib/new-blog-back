@@ -51,7 +51,6 @@ router.post("/:postId", async (req, res) => {
 
     res.status(201).json(populatedComment);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "فشل في إضافة التعليق", error: err });
   }
 });

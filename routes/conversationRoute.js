@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const Conversation = require("../models/Conversation");
+const Message = require("../models/Message");
 
 router.post("/", async (req, res) => {
   const { senderId, receiverId } = req.body;
@@ -25,6 +26,22 @@ router.get("/:userId", async (req, res) => {
     res.status(200).json(conversations);
   } catch (err) {
     res.status(500).json(err);
+  }
+});
+
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const convId = req.params.id;
+
+    await Message.deleteMany({ conversationId: convId });
+
+    await Conversation.findByIdAndDelete(convId);
+
+    res.status(200).json({ message: "تم حذف المحادثة والرسائل المرتبطة بها" });
+  } catch (err) {
+    console.error("❌ خطأ في حذف المحادثة:", err.message);
+    res.status(500).json({ message: "حدث خطأ أثناء حذف المحادثة" });
   }
 });
 

@@ -32,7 +32,6 @@ router.post("/", upload.single("image"), async (req, res) => {
     await newPost.save();
     res.status(201).json(newPost);
   } catch (err) {
-    console.error("❌ Error saving post:", err);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
@@ -85,7 +84,6 @@ router.put("/:id", upload.single("image"), async (req, res) => {
 
     res.status(200).json(updatedPost);
   } catch (err) {
-    console.error(err); // مهم تطبع الغلط لو حصل
     res.status(500).json({ message: "فشل في تعديل البوست" });
   }
 });

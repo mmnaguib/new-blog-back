@@ -36,7 +36,6 @@ router.post("/login", async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -64,7 +63,6 @@ router.post("/register", async (req, res) => {
 
     res.status(201).json({ message: "User registered successfully" });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -112,7 +110,6 @@ router.put("/me", protect, upload.single("image"), async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -131,7 +128,6 @@ router.get("/user/:id", async (req, res) => {
 
     res.status(200).json({ user, posts });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: "حدث خطأ أثناء جلب المستخدم" });
   }
 });

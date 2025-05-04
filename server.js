@@ -19,14 +19,8 @@ const io = new Server(server, {
 const onlineUsers = new Map(); // نقوم بتخزين الـ users المتصلين
 
 io.on("connection", (socket) => {
-  console.log("✅ مستخدم متصل:", socket.id);
-
-  // عند الانضمام
   socket.on("join", (userId) => {
     onlineUsers.set(userId, socket.id);
-    console.log("🟢", userId, "انضم بالسوكيت", socket.id);
-
-    // عند أي اتصال جديد أرسل جميع المستخدمين الأونلاين لكل الـ clients
     io.emit("onlineUsers", Array.from(onlineUsers.keys()));
   });
 
@@ -48,13 +42,11 @@ io.on("connection", (socket) => {
       // كمان ابعته للمرسل علشان يظهر عنده فورًا
       socket.emit("getMessage", populatedMsg);
     } catch (err) {
-      console.error("❌ خطأ في إرسال الرسالة:", err.message);
     }
   });
 
   // عند الخروج
   socket.on("disconnect", () => {
-    console.log("🔴 مستخدم قطع الاتصال:", socket.id);
     for (const [userId, sId] of onlineUsers.entries()) {
       if (sId === socket.id) {
         onlineUsers.delete(userId);

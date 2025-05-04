@@ -70,7 +70,6 @@ router.post("/:postId/react", async (req, res) => {
 
     res.status(200).json(reaction);
   } catch (err) {
-    console.error(err);
     res
       .status(500)
       .json({ message: "خطأ أثناء التعامل مع التفاعل", error: err });
